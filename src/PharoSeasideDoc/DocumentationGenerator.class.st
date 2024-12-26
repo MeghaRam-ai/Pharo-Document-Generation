@@ -48,57 +48,61 @@ DocumentationGenerator >> classMetaData: anObject [
 ]
 
 { #category : 'operation' }
-DocumentationGenerator >> extractInstanceVariables:class [
+DocumentationGenerator >> extractInstanceVariables: class [
 	"This function extracts instance variables of a class given a class name"
-	"scope: class-variables  &  instance-variables"
-	|instanceVariableNames|
-	instanceVariableNames:=OrderedCollection new.
-		(class instanceVariables ) do:[:ins|
-			instanceVariableNames add: ins name.
-			].
-	^instanceVariableNames.
 
+	"scope: class-variables  &  instance-variables"
+
+	| instanceVariableNames |
+	instanceVariableNames := OrderedCollection new.
+	class instanceVariables do: [ :ins |
+		instanceVariableNames add: ins name ].
+	^ instanceVariableNames
 ]
 
 { #category : 'operating' }
-DocumentationGenerator >> extractMethodData:class [
+DocumentationGenerator >> extractMethodData: class [
 	"This function extracts the details of methods used inside a class"
-	"scope: class-variables  &  instance-variables"
-	|methodData|
-	methodData := OrderedCollection new.
-	class methods do:[:aMethod|
-				|classMethodData|
-				classMethodData := Dictionary new.
-				classMethodData at: #methodName put: (aMethod selector).
-				classMethodData at: #methodComment put: (aMethod comment).
-				methodData add: classMethodData.
-				].
-	^methodData .
 
+	"scope: class-variables  &  instance-variables"
+
+	| methodData |
+	methodData := OrderedCollection new.
+	class methods do: [ :aMethod |
+		| classMethodData |
+		classMethodData := Dictionary new.
+		classMethodData at: #methodName put: aMethod selector.
+		classMethodData at: #methodComment put: aMethod comment.
+		methodData add: classMethodData ].
+	^ methodData
 ]
 
 { #category : 'operation' }
 DocumentationGenerator >> loadClassMetadata [
 	"This is the main class to process a package and extract information about
 	itself and the containing methods, varibales etc"
-	
-	|package classes metaData|
-	
-	[package:= Smalltalk image packages detect: [ :p | p name = packageName ]] on: Exception do: [ ^self].
-	
-	classes:= package definedClasses.
+
+	| package classes metaData |
+	[
+	package := Smalltalk image packages detect: [ :p |
+		           p name = packageName ] ]
+		on: Exception
+		do: [ ^ self ].
+
+	classes := package definedClasses.
 	ClassMetaData := OrderedCollection new.
-	
-	classes do:[:cl|
+
+	classes do: [ :cl |
 		metaData := Dictionary new.
-		metaData at: #className put: (cl name).
-		metaData at: #childClasses put: (cl subclasses).
-		metaData at: #superClass put: (cl superclass).
-		metaData at: #comment put: (cl comment).
-		metaData at: #instanceVariables put: (self extractInstanceVariables: cl).
+		metaData at: #className put: cl name.
+		metaData at: #childClasses put: cl subclasses.
+		metaData at: #superClass put: cl superclass.
+		metaData at: #comment put: cl comment.
+		metaData
+			at: #instanceVariables
+			put: (self extractInstanceVariables: cl).
 		metaData at: #methodDetails put: (self extractMethodData: cl).
-		ClassMetaData add: metaData.
-		].
+		ClassMetaData add: metaData ]
 ]
 
 { #category : 'accessing' }
@@ -116,83 +120,75 @@ DocumentationGenerator >> packageName: aString [
 { #category : 'rendering' }
 DocumentationGenerator >> renderContentOn: html [
 	"Main rendering of package details as the contents of html"
+
 	html form: [
 		html text: 'Package Name: '.
 		html textInput on: #packageName of: self.
 		html break.
 		html break.
 		html submitButton
-			callback: [ self loadClassMetadata];
+			callback: [ self loadClassMetadata ];
 			with: 'Genrate Documentation' ].
 
 	ClassMetaData isEmptyOrNil ifTrue: [ ^ self ].
-	html div class: 'box-out'; with: [  
-	html unorderedList: [
-		ClassMetaData do: [ :classData |
-			html listItem: [
-				html heading level2 with: 'Class: ' , (classData at: #className).
-				html
-					text: 'Parent: ';
-					text: (classData at: #superClass);
-					break;
-					break.
+	html div
+		class: 'box-out';
+		with: [
+			html unorderedList: [
+					ClassMetaData do: [ :classData |
+							html listItem: [
+									html heading level2 with:
+											'Class: ' , (classData at: #className).
+									html
+										text: 'Parent: ';
+										text: (classData at: #superClass);
+										break;
+										break.
 
-				(classData at: #childClasses) ifNotEmpty: [ :childClasses |
-					html
-						strong: 'Direct Known Subclasses: ';
-						strong: (String streamContents: [ :stream |
-									 childClasses do: [ :each |
-											 stream
-												 nextPutAll: each asString;
-												 nextPutAll: ', ' ] ]);
-						break;
-						break ].
+									(classData at: #childClasses) ifNotEmpty: [ :childClasses |
+										html
+											strong: 'Direct Known Subclasses: ';
+											strong: (String streamContents: [ :stream |
+														 childClasses do: [ :each |
+																 stream
+																	 nextPutAll: each asString;
+																	 nextPutAll: ', ' ] ]);
+											break;
+											break ].
 
-				html horizontalRule .
-				html
-					text: 'Class ';
-					strong: (classData at: #className);
-					text: ' child of ';
-					text: (classData at: #superClass);
-					break;
-					break.
-				html text:(classData at: #comment).
-			
-				
-				html div class: 'box'; with: [  
-				html heading level3 with: 'Field Summary '.
-				html table:[
-					html tableColumn: [
-        			html tableHeading: 'Fields'.
-        			(classData at: #instanceVariables) do: [:var |
-            		html tableRow: [
-                		html tableData: var asString.
-            		].
-        		].
-    			].
-					].
-					].].
-			html div class: 'box'; with: [  
-				html heading level3 with: 'Method Summary '.
-				html table:[
-					
-					html tableRow:[
-						html tableHeading: 'Method Name'.
-						html tableHeading: 'Method description'.
-			
-				(classData at:#methodDetails) do:[:data|
-					html tableRow: [
-						html tableData: (data at:#methodName) asString.
-						html tableData: (data at:#methodComment) asString.
-					].
-				].
-				].
-			
-			
-   		].	].
-	].
- 		].].
-	
+									html horizontalRule.
+									html
+										text: 'Class ';
+										strong: (classData at: #className);
+										text: ' child of ';
+										text: (classData at: #superClass);
+										break;
+										break.
+									html text: (classData at: #comment).
+
+
+									html div
+										class: 'box';
+										with: [
+											html heading level3 with: 'Field Summary '.
+											html table: [
+													html tableColumn: [
+															html tableHeading: 'Fields'.
+															(classData at: #instanceVariables) do: [ :var |
+																	html tableRow: [ html tableData: var asString ] ] ] ] ] ].
+							html div
+								class: 'box';
+								with: [
+									html heading level3 with: 'Method Summary '.
+									html table: [
+											html tableRow: [
+													html tableHeading: 'Method Name'.
+													html tableHeading: 'Method description'.
+
+													(classData at: #methodDetails) do: [ :data |
+															html tableRow: [
+																	html tableData: (data at: #methodName) asString.
+																	html tableData: (data at: #methodComment) asString ] ] ] ] ] ] ] ]
 ]
 
 { #category : 'initialization' }
@@ -206,6 +202,7 @@ DocumentationGenerator >> setPackageName: aPackageName [
 { #category : 'accessing' }
 DocumentationGenerator >> style [
 	"main css style file"
+
 	^ 'table { width: 100%; 
 			background-color: #9CB9BF; 
 			margin: 20px 0;
