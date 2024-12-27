@@ -10,6 +10,8 @@ To run the project:
 DocumentationGenerator initialize .
 ``
 
+You can see the webpage in http://localhost:8080/documentation
+
 
 Preview: 
 
