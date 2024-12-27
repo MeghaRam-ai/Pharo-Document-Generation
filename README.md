@@ -13,6 +13,17 @@ DocumentationGenerator initialize .
 You can see the webpage in http://localhost:8080/documentation
 
 
+
+Note: Seaside will have been already installed with Pharo, if not excecute:
+
+``
+  Metacello new
+  baseline:'Seaside3';
+  repository: 'github://SeasideSt/Seaside:master/repository';
+  load
+``
+
+
 Preview: 
 
 <img width="1000" alt="image" src="https://github.com/user-attachments/assets/77ffd13f-9f12-40f1-91d1-93e64fa46ed6" />
